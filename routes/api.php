@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('expenses', ExpenseController::class)->only(['index', 'store', 'show']);
 
     // Reports
+    Route::get('/reports/dashboard-stats', [ReportController::class, 'dashboardStats']);
     Route::get('/reports/outstanding-invoices', [ReportController::class, 'outstandingInvoices']);
     Route::get('/reports/collections-summary', [ReportController::class, 'collectionsSummary']);
     Route::get('/reports/collections-feed', [ReportController::class, 'collectionsFeed']);

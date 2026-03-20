@@ -7,11 +7,38 @@ use App\Models\AuditLog;
 use App\Models\Collection;
 use App\Models\Expense;
 use App\Models\Invoice;
+use App\Models\Person;
+use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    /**
+     * Dashboard Quick Stats
+     */
+    public function dashboardStats(Request $request)
+    {
+        $pendingInvoiceTotal = Invoice::whereIn('status', ['issued', 'partially_paid'])
+            ->sum('outstanding_amount');
+
+        $todayCollections = Collection::whereDate('collection_date', now()->toDateString())
+            ->sum('amount');
+
+        $qidExpiryCount = Person::whereNotNull('id_expiration_date')
+            ->where('id_expiration_date', '<=', now()->addDays(30)->toDateString())
+            ->count();
+
+        $totalProjects = Project::count();
+
+        return response()->json([
+            'pending_invoice_total' => $pendingInvoiceTotal,
+            'today_collections' => $todayCollections,
+            'qid_expiry_count' => $qidExpiryCount,
+            'total_projects' => $totalProjects,
+        ]);
+    }
+
     /**
      * Outstanding invoices with aging buckets (30/60/90 days)
      */
@@ -98,7 +125,10 @@ class ReportController extends Controller
     public function collectionsFeed(Request $request)
     {
         $query = Collection::with([
-            'invoice:id,invoice_code',
+            'invoice:id,invoice_code,project_id',
+            'invoice.project:id,person_id',
+            'invoice.project.person:id,company_id',
+            'invoice.project.person.company:id,name',
             'collector:id,name',
         ])->latest('collection_date');
 
